@@ -9,11 +9,13 @@
 #include <regex.h>
 #include "cJSON.h"
 #define ERRMSG "\33[1;31mError: \33[0m"
+#define WARNMSG "\33[1;35mWARNING: \33[0m"
 #define PORT 80
 #define BUFSIZE 2048
 #define SOCKBUF 2097152
 #define API_H5 "h5.pipix.com"
 #define API_PIX "is.snssdk.com"
+#define PD(N) printf("length: %zd\n", (N));
 #define USER_AGENT "Mozilla/5.0 (Linux; Android 12; XT2201-2) " \
 	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.57 Mobile Safari/537.36"
 #define ACCEPT "Application/json; Charset: UTF-8"
@@ -33,11 +35,11 @@ int main(int argc, char **argv)
 	char *addr = (char *)malloc(BUFSIZE * sizeof(char));
 	char *buffer = (char *)malloc(SOCKBUF * sizeof(char));
 	char *buffer_ = (char *)malloc(SOCKBUF * sizeof(char));
-	char *god_comment = NULL;
+	char command[1000] = "am start -a android.intent.action.VIEW -d \"";
 	char *ch = NULL;
+	unsigned long int recvbyte = 0;
 	cJSON *json = NULL;
-	cJSON *obj = NULL;
-	cJSON *o = NULL;
+	cJSON *obj[4] = {NULL};
 	FILE *fp = NULL;
 
 	memset(addr, '\0', BUFSIZE * sizeof(char));
@@ -69,31 +71,53 @@ int main(int argc, char **argv)
 		"{}",
 		addr, API_PIX, USER_AGENT, ACCEPT, CONNECTION
 	);
-	fn(buffer, msg, API_PIX);
+	recvbyte = fn(buffer, msg, API_PIX);
+	ch = strchr(buffer, '{');
+	recvbyte -= (ch - buffer);
+	char *ch_ = NULL;
+	if ((ch_ = strstr(ch, "\r\n")))
+	{
+		*ch_ = '\0';
+		strncpy(buffer_, ch, strlen(ch));
+	}
+	while ((ch_ = strstr(ch_ + 1, "\r\n")))
+		strcat(buffer_, ch_ + 2);
+	if ((ch_ = strstr(buffer_, "\r\n")))
+	{
+		while ((ch_ = strchr(ch_, '0')) /*|| (ch_ = strchr(ch_, '\r')) */)
+			*ch_ = '\0';
+		while ((ch_ = strchr(buffer_, '\n')))
+			*ch_ = '\0';
+	}
+
+	if ((json = cJSON_Parse(buffer_)) == NULL)
+		fprintf(stderr, "%sInitialization json object error\n", ERRMSG);
+	if ((*obj = cJSON_GetObjectItem(cJSON_GetObjectItem(json, "data")->child, "item")) == NULL)
+		fprintf(stderr, "%sParse json object error\n", ERRMSG);
+	if ((obj[1] = cJSON_GetObjectItem(*obj, "content")) == NULL)
+		fprintf(stdout, "%sThe video have not title\n", WARNMSG);
+	if ((obj[2] = cJSON_GetObjectItem(cJSON_GetArrayItem(cJSON_GetObjectItem(*obj, "comments"), 0), "text")) == NULL)
+		fprintf(stderr, "%sThe video have not god comment\n", WARNMSG);
+	if ((obj[3] = cJSON_GetObjectItem(
+		cJSON_GetArrayItem(
+			cJSON_GetObjectItem(
+				cJSON_GetObjectItem(
+					cJSON_GetObjectItem(
+						*obj, "video"
+					), "video_high"
+				), "url_list"
+			), 1
+		), "url"
+	)) == NULL)
+		fprintf(stderr, "%sVideo parse fail.\n", ERRMSG);
+	printf("Video Title: %s\n", obj[1] ? obj[1]->valuestring : (NULL));
+	printf("Video god comment: %s\nVideo url: %s\n", obj[2] ? obj[2]->valuestring : (NULL), obj[3] ? obj[3]->valuestring : (NULL));
+	system(strcat(strcat(command, obj[3] ? obj[3]->valuestring : (NULL)), "\""));
 
 	memset(msg, '\0', BUFSIZE * sizeof(char));
 	memset(addr, '\0', BUFSIZE * sizeof(char));
-	strcpy(buffer_, strchr(buffer, '{'));
-	ch = strchr(buffer_, '\n');
-	*ch = '\0';
-	strcat(buffer_, ch + 5);
-	/*unsigned int j = 0;
-	for (unsigned int i = 0; *(buffer_ + i) != '\0'; i++)
-	{
-		if (*(buffer + i) == '\n'
-	*/
-	printf("%s\nlength: %zd\nstrlen: %zd\n", buffer_, sizeof(buffer_), strlen(buffer_));
-	
-	fp = fopen("data", "w");
-	fwrite(buffer_, sizeof(char), strlen(buffer_), fp);
-	json = cJSON_Parse(buffer_);
-	obj = cJSON_GetObjectItem(cJSON_GetObjectItem(json, "data")->child, "item");
-	o = cJSON_GetObjectItem(obj, "comments");
-	printf("%s\n", obj->valuestring);
-	printf("%d\n", o->type);
-	puts(god_comment);
 
-	fclose(fp);
+	// fclose(fp);
 	cJSON_Delete(json);
 	free(msg);
 	free(addr);
@@ -112,7 +136,7 @@ unsigned long int fn(char *restrict buffer, const char *restrict msg, const char
 
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		fprintf(stderr, "%sCreate socket-description fail. socket:%d\n", ERRMSG, sockfd);
-	printf("Create socket-file-description suceess: %d\n", sockfd);
+	// printf("Create socket-file-description suceess: %d\n", sockfd);
 
 	if (!(host = gethostbyname(addr)))
 		fprintf(stderr, "%sGet IP of %s fail.\n", ERRMSG, addr);
@@ -123,10 +147,10 @@ unsigned long int fn(char *restrict buffer, const char *restrict msg, const char
 
 	if ((connect(sockfd, (struct sockaddr *)&addr_, sizeof(struct sockaddr))) < 0)
 		fprintf(stderr, "%sConnect to %s of %s fail.\n", ERRMSG, inet_ntoa(addr_.sin_addr), addr);
-	printf("Connect to \33[1;46m%s\33[0m of %s success.\n", inet_ntoa(addr_.sin_addr), addr);
-	if ((send(sockfd, msg, strlen(msg), MSG_WAITALL)) < 0)
+	// printf("Connect to \33[1;46m%s\33[0m of %s success.\n", inet_ntoa(addr_.sin_addr), addr);
+	if ((write(sockfd, msg, strlen(msg))) < 0)
 		fprintf(stderr, "%sRequest %s fail.\n", ERRMSG, addr);
-	while ((recvb = recv(sockfd, buffer + recvbyte, SOCKBUF, MSG_WAITALL)) > 0)
+	while ((recvb = read(sockfd, buffer + recvbyte, SOCKBUF - recvbyte)) > 0)
 		recvbyte += recvb;
 	close(sockfd);
 	return recvbyte;
