@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
 	memset(msg, '\0', BUFSIZE * sizeof(char));
 	memset(addr, '\0', BUFSIZE * sizeof(char));
-	strcpy(addr, regex(buffer, "item/?[0-9]{10,}"/*"(http|https)://h5.?pipix.?com/{1}item/{1}[0-9]{1,}\\?"*/) + 5);
+	strcpy(addr, regex(buffer, "item/?[0-9]{10,}") + 5);
 	memset(buffer, '\0', SOCKBUF * sizeof(char));
 	sprintf(msg, "GET /bds/cell/detail/?cell_type=1&aid=1319&app_name=super&cell_id=%s HTTP/1.1\r\n"
 		"Host: %s\r\n"

@@ -1,2 +1,2 @@
-gcc pix.c cJSON.c -Wall -m64 -O3 -o pix
+gcc pix.c cJSON.c -m64 -O3 -o pix
 ./pix https://h5.pipix.com/s/251aans/# [皮皮虾] 孤独就像这个圈圈 【长按复制】到浏览器观看
