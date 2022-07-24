@@ -104,7 +104,7 @@ def index():
 		if request.args.get("url"):
 			if request.args.get("type") == "pipix":
 				return sdk250.pipix(request.args.get("url"))
-			elif request.form.get("type") == "ks":
+			elif request.args.get("type") == "ks":
 				return sdk250.kuaishou(request.args.get("url"))
 		else:
 			return "URL is Null.\n"
