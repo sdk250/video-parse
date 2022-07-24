@@ -92,9 +92,9 @@ int main(int argc, char **argv)
 		), "url"
 	)) == NULL)
 		fprintf(stderr, "%sVideo parse fail.\n", ERRMSG);
-	printf("Video Title: %s\n", obj[1] ? obj[1]->valuestring : (NULL));
-	printf("Video god comment: %s\nVideo url: %s\n", obj[2] ? obj[2]->valuestring : (NULL), obj[3] ? obj[3]->valuestring : (NULL));
-	system(strcat(strcat(command, obj[3] ? obj[3]->valuestring : (NULL)), "\""));
+	printf("Video Title: %s\n", (obj[1]) ? obj[1]->valuestring : (NULL));
+	printf("Video god comment: %s\nVideo url: %s\n", (obj[2]) ? obj[2]->valuestring : (NULL), (obj[3]) ? obj[3]->valuestring : (NULL));
+	system(strcat(strcat(command, (obj[3]) ? obj[3]->valuestring : (NULL)), "\""));
 
 	memset(msg, '\0', BUFSIZE * sizeof(char));
 	memset(addr, '\0', BUFSIZE * sizeof(char));
