@@ -37,22 +37,20 @@ int main(int argc, char **argv)
 	char *buffer_ = (char *)malloc(SOCKBUF * sizeof(char));
 	char command[1000] = "am start -a android.intent.action.VIEW -d \"";
 	char *ch = NULL;
-	unsigned long int recvbyte = 0;
 	cJSON *json = NULL;
 	cJSON *obj[4] = {NULL};
-	FILE *fp = NULL;
 
 	memset(addr, '\0', BUFSIZE * sizeof(char));
 	memset(msg, '\0', BUFSIZE * sizeof(char));
 	memset(buffer, '\0', SOCKBUF * sizeof(char));
 	memset(buffer_, '\0', SOCKBUF * sizeof(char));
 	strcpy(addr, regex(argv[1], "/{1}[a-z0-9A-Z]{5,}") + 1);
-	sprintf(msg, "GET /s/%s HTTP/1.1\n"
-		"Host: %s\n"
-		"User-Agent: %s\n"
-		"Accept: %s\n"
-		"Connection: %s\n"
-		"\n"
+	sprintf(msg, "GET /s/%s HTTP/1.1\r\n"
+		"Host: %s\r\n"
+		"User-Agent: %s\r\n"
+		"Accept: %s\r\n"
+		"Connection: %s\r\n"
+		"\r\n"
 		"{}",
 		addr, API_H5, USER_AGENT, ACCEPT, CONNECTION
 	);
@@ -62,34 +60,18 @@ int main(int argc, char **argv)
 	memset(addr, '\0', BUFSIZE * sizeof(char));
 	strcpy(addr, regex(buffer, "item/?[0-9]{10,}"/*"(http|https)://h5.?pipix.?com/{1}item/{1}[0-9]{1,}\\?"*/) + 5);
 	memset(buffer, '\0', SOCKBUF * sizeof(char));
-	sprintf(msg, "GET /bds/cell/detail/?cell_type=1&aid=1319&app_name=super&cell_id=%s HTTP/1.1\n"
-		"Host: %s\n"
-		"User-Agent: %s\n"
-		"Accept: %s\n"
-		"Connection: %s\n"
-		"\n"
+	sprintf(msg, "GET /bds/cell/detail/?cell_type=1&aid=1319&app_name=super&cell_id=%s HTTP/1.1\r\n"
+		"Host: %s\r\n"
+		"User-Agent: %s\r\n"
+		"Accept: %s\r\n"
+		"Connection: %s\r\n"
+		"\r\n"
 		"{}",
 		addr, API_PIX, USER_AGENT, ACCEPT, CONNECTION
 	);
-	recvbyte = fn(buffer, msg, API_PIX);
-	ch = strchr(buffer, '{');
-	recvbyte -= (ch - buffer);
-	char *ch_ = NULL;
-	if ((ch_ = strstr(ch, "\r\n")))
-	{
-		*ch_ = '\0';
-		strncpy(buffer_, ch, strlen(ch));
-	}
-	while ((ch_ = strstr(ch_ + 1, "\r\n")))
-		strcat(buffer_, ch_ + 2);
-	if ((ch_ = strstr(buffer_, "\r\n")))
-	{
-		while ((ch_ = strchr(ch_, '0')) /*|| (ch_ = strchr(ch_, '\r')) */)
-			*ch_ = '\0';
-		while ((ch_ = strchr(buffer_, '\n')))
-			*ch_ = '\0';
-	}
-
+	fn(buffer, msg, API_PIX);
+	if ((ch = strchr(buffer, '{')))
+		strncpy(buffer_, ch, strlen(ch) + 1);
 	if ((json = cJSON_Parse(buffer_)) == NULL)
 		fprintf(stderr, "%sInitialization json object error\n", ERRMSG);
 	if ((*obj = cJSON_GetObjectItem(cJSON_GetObjectItem(json, "data")->child, "item")) == NULL)
@@ -117,7 +99,6 @@ int main(int argc, char **argv)
 	memset(msg, '\0', BUFSIZE * sizeof(char));
 	memset(addr, '\0', BUFSIZE * sizeof(char));
 
-	// fclose(fp);
 	cJSON_Delete(json);
 	free(msg);
 	free(addr);
