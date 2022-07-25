@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from flask import Flask, request
 import requests
 import json
@@ -33,11 +34,14 @@ class parse(object):
 			},
 			allow_redirects = False
 		).text)
+		god_comment = None
+		if response["data"]["data"]["item"]["comments"][0]:
+			god_comment = response["data"]["data"]["item"]["comments"][0]["text"]
 		return {
 			"message": "success",
 			"data": {
 				"title": response["data"]["data"]["item"]["content"],
-				"god-comment": response["data"]["data"]["item"]["comments"][0]["text"],
+				"god-comment": god_comment,
 				"url": response["data"]["data"]["item"]["video"]["video_high"]["url_list"][0]["url"]
 			}
 		}
