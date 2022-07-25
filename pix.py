@@ -5,7 +5,6 @@ import json
 import re
 
 class parse(object):
-	
 	def __init__(self):
 		self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62"
 		self.accept = "Application/json; charet: UTF-8"
@@ -35,7 +34,7 @@ class parse(object):
 			allow_redirects = False
 		).text)
 		god_comment = None
-		if response["data"]["data"]["item"]["comments"][0]:
+		if response["data"]["data"]["item"]["comments"]:
 			god_comment = response["data"]["data"]["item"]["comments"][0]["text"]
 		return {
 			"message": "success",
@@ -48,7 +47,6 @@ class parse(object):
 
 	def kuaishou(self, id):
 		id_ = re.compile("((http|https)://v.(kuaishou|kuaishouapp).com/.+[a-z0-9A-Z]+)").findall(id)
-		print(id_[0][0])
 		response = requests.get(
 			url = id_[0][0],
 			headers = {
@@ -60,7 +58,6 @@ class parse(object):
 			allow_redirects = False
 		)
 		id_ = re.compile("photoId\=([0-9a-zA-Z]{10,})").findall(response.headers["Location"])
-		print(id_)
 		response = json.loads(requests.post(
 			url = "https://v.m.chenzhongtech.com/rest/wd/photo/info",
 			data = json.dumps({
@@ -104,16 +101,18 @@ sdk250 = parse()
 
 @app.route("/", methods = ["GET", "POST"])
 def index():
-	if request.args.get("type"):
-		if request.args.get("url"):
-			if request.args.get("type") == "pipix":
-				return sdk250.pipix(request.args.get("url"))
-			elif request.args.get("type") == "ks":
-				return sdk250.kuaishou(request.args.get("url"))
+	if request.args.get("url"):
+		if re.findall(re.compile("(kuaishou|kuaishouapp)"), request.args.get("url")) != []:
+			return sdk250.kuaishou(request.args.get("url"))
+		elif re.findall(re.compile("(pipix)"), request.args.get("url")) != []:
+			return sdk250.pipix(request.args.get("url"))
 		else:
-			return "URL is Null.\n"
+			return {
+				"code": 404,
+				"message": "Null"
+			}
 	else:
-		return "Type is Null.\n"
+		return "URL is Null.\n"
 
 if __name__ == "__main__":
 	app.run(host = "0.0.0.0", port = 20880, debug = True)
