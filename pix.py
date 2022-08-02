@@ -46,7 +46,8 @@ class parse(object):
 		}
 
 	def kuaishou(self, id):
-		id_ = re.compile("((http|https)://v.(kuaishou|kuaishouapp).com/.+[a-z0-9A-Z]+)").findall(id)
+		id_ = re.compile("((http|https)?://v.(kuaishou|kuaishouapp)?\.com/.{3,6}[a-z0-9A-Z]+)").findall(id)
+		print(id_)
 		response = requests.get(
 			url = id_[0][0],
 			headers = {
@@ -57,6 +58,8 @@ class parse(object):
 			},
 			allow_redirects = False
 		)
+		print(response.headers)
+		"""
 		id_ = re.compile("photoId\=([0-9a-zA-Z]{10,})").findall(response.headers["Location"])
 		response = json.loads(requests.post(
 			url = "https://v.m.chenzhongtech.com/rest/wd/photo/info",
@@ -84,6 +87,7 @@ class parse(object):
 				"url": response["photo"]["mainMvUrls"][0]["url"]
 			}
 		}
+		"""
 
 	def run(self):
 		# a = self.pipix("https://h5.pipix.com/s/251aans/# [皮皮虾] 孤独就像这个圈圈 【长按复制】到浏览器观看")
@@ -115,4 +119,5 @@ def index():
 		return "URL is Null.\n"
 
 if __name__ == "__main__":
-	app.run(host = "0.0.0.0", port = 20880, debug = True)
+	# app.run(host = "0.0.0.0", port = 20880, debug = True)
+	sdk250.kuaishou("https://v.kuaishouapp.com/s/2W6Im5AC 说陈道长不是修仙这是说不过去的\"陈道长 \"捕娱计划 \"娱你星动计划第一期 该作品在快手被播放过772.3万次，点击链接，打开【快手极速版】直接观看！")
