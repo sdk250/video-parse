@@ -7,8 +7,9 @@ import re
 class parse(object):
 	def __init__(self):
 		self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36 Edg/103.0.1264.62"
-		self.accept = "Application/json; charet: UTF-8"
+		self.accept = "application/json; charet: UTF-8"
 		self.connection = "Close"
+		self.content_type = "application/x-www-form-urlencoded"
 
 	def pipix(self, id):
 		id_ = re.compile("(/{1}s/{1})([0-9a-zA-Z]{5,})").findall(id)
@@ -85,27 +86,63 @@ class parse(object):
 			}
 		}
 
+	def douyin(self, id):
+		id_ = re.findall(re.compile("((http|https)?://v\.douyin\.com/[a-z0-9A-Z]+)"), id)
+		response = requests.get(
+			url = id_[0][0],
+			headers = {
+				"Host": "v.douyin.com",
+				"User-Agent": self.user_agent,
+				"Accept": self.accept,
+				"Connection": self.connection
+			},
+			allow_redirects = False
+		)
+		id_ = re.findall(re.compile("video/([0-9]+)/.+"), response.headers["Location"])
+		response = json.loads(requests.get(
+			url = "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + id_[0],
+			headers = {
+				"Host": "www.iesdouyin.com",
+				"User-Agent": self.user_agent,
+				"Accept": self.accept,
+				"Connection": self.connection
+			},
+			allow_redirects = False
+		).text)
+		return {
+			"message": "success",
+			"data": {
+				"title": response["item_list"][0]["desc"],
+				"god-comment": None,
+				"url": response["item_list"][0]["video"]["play_addr"]["url_list"][0]
+			}
+		}
+
 	def run(self):
 		# a = self.pipix("https://h5.pipix.com/s/251aans/# [皮皮虾] 孤独就像这个圈圈 【长按复制】到浏览器观看")
-		b = self.kuaishou("https://v.kuaishouapp.com/s/QKtYIfi3 卢卢溜溜球 \"可莉 \"仲夏幻夜奇想曲 \"原神 复制此消息，打开【快手极速版】直接观看！")
-		b = self.kuaishou("https://v.kuaishou.com/qZgvoL 你以为元歌那么好玩吗？我也来试试针对元歌")
-		# print("Video title:", a["data"]["title"])
-		# print("Video god comment:", a["data"]["god-comment"])
-		# print("Video url:", a["data"]["url"])
-		print("====\t====")
-		print("Video title:", b["data"]["title"])
-		print("Video url:", b["data"]["url"])
+		# b = self.kuaishou("https://v.kuaishouapp.com/s/QKtYIfi3 卢卢溜溜球 \"可莉 \"仲夏幻夜奇想曲 \"原神 复制此消息，打开【快手极速版】直接观看！")
+		# b = self.kuaishou("https://v.kuaishou.com/qZgvoL 你以为元歌那么好玩吗？我也来试试针对元歌")
+		c = self.douyin("7.48 qRk:/ 复制打开抖音，看看【小纯游戏（原神）的作品】# 仲夏幻夜奇想曲 # 原神 # 原神与你同行 可怜的霄... https://v.douyin.com/2cHLCwy/")
+		print("Video title:", c["data"]["title"])
+		print("Video god comment:", c["data"]["god-comment"])
+		print("Video url:", c["data"]["url"])
+		# print("====\t====")
+		# print("Video title:", b["data"]["title"])
+		# print("Video url:", b["data"]["url"])
 
 app = Flask(__name__)
 sdk250 = parse()
 
 @app.route("/", methods = ["GET", "POST"])
 def index():
-	if request.args.get("url"):
-		if re.findall(re.compile("(kuaishou|kuaishouapp)"), request.args.get("url")) != []:
-			return sdk250.kuaishou(request.args.get("url"))
-		elif re.findall(re.compile("(pipix)"), request.args.get("url")) != []:
-			return sdk250.pipix(request.args.get("url"))
+	url = request.args.get("url")
+	if url:
+		if re.findall(re.compile("(kuaishou|kuaishouapp)"), url) != []:
+			return sdk250.kuaishou(url)
+		elif re.findall(re.compile("(pipix)"), url) != []:
+			return sdk250.pipix(url)
+		elif re.findall(re.compile("(douyin)"), url) != []:
+			return sdk250.douyin(url)
 		else:
 			return {
 				"code": 404,
